@@ -95,7 +95,7 @@ Supported arguments are:
 - --tmpdir <WORK_DIR>: tmp dir for writing some results
 
 ### Train
-Avaiable Soon
+Available Soon
 
 ## Dataset
-Avaiable soon
+Available soon
