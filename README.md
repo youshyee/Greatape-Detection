@@ -95,7 +95,53 @@ Supported arguments are:
 - --tmpdir <WORK_DIR>: tmp dir for writing some results
 
 ### Train
-Available Soon
+```bash
+sh tools/dist_train.sh <GPU_NUM>  <CONFIG_FILE> <PATH/TO/PANAFRICA/TRAINSPLIT>  [optinal arguments]
+
+```
+
+- < GPU_NUM> : number of gpu you can use for inference
+- < CONFIG_FILE >: model configuration files, can be found in configs dir.
+- < PATH/TO/PANAFRICA/TRAINSPLIT >: the path of training set split: train.txt 
+
+[optinal arguments]
+- --checkpoint < MODEL_PATH >
+- --work_dir < WORKDIR >: the dir to save logs and models
+- --resume_from: < CHECKPOINT >: the checkpoint file to resume from
+- --validate: whether to evaluate the checkpoint during training
+- -test: whether to test final model after training
+
 
 ## Dataset
-Available soon
+Please download the dataset
+make sure your folder structure like this
+```
+Greatape-detection
+├── PanAfrica
+│   ├── videos
+│   │   ├── 0FhliLmQri.mp4
+│   │   ├── 0FUP9Wc3pg.mp4
+│   │   ├── ...
+│   │   ├── ZZ5rZm8j3M.mp4
+│   ├── videoframes
+│   │   ├── 0FhliLmQri
+│   │   │   ├── 000000.jpg
+│   │   │   ├── 000001.jpg
+│   │   │   ├── ...
+│   │   ├── 0FUP9Wc3pg
+│   │   ├── ...
+│   │   ├── ZZ5rZm8j3M
+│   ├── annotations
+│   │   ├── 0FhliLmQri
+│   │   │   ├── 0FhliLmQri_frame_1.xml
+│   │   │   ├── 0FhliLmQri_frame_2.xml
+│   │   │   ├── ...
+│   │   ├── 0FUP9Wc3pg
+│   │   ├── ...
+│   │   ├── ZZ5rZm8j3M
+│   ├── splits
+│   │   ├── all.txt
+│   │   ├── train.txt
+│   │   ├── test.txt
+│   │   ├── val.txt
+```

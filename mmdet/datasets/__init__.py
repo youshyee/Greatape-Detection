@@ -11,12 +11,13 @@ from .vid import VID
 from .det import DET
 from .chimp import CHIMP
 from .chimp_infer import CHIMP_INFER
+from .chimp_train import CHIMP_TRAIN
 
 __all__ = [
     'CustomDataset', 'XMLDataset', 'CocoDataset', 'VOCDataset', 'GroupSampler',
     'DistributedGroupSampler', 'build_dataloader', 'to_tensor', 'random_scale',
     'show_ann', 'get_dataset', 'ConcatDataset', 'RepeatDataset',
-    'ExtraAugmentation','VID','DET','CHIMP','CHIMP_INFER'
+    'ExtraAugmentation','VID','DET','CHIMP','CHIMP_INFER','CHIMP_TRAIN'
 ]
 
 

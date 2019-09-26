@@ -21,6 +21,7 @@ import shutil
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a detector')
     parser.add_argument('config', help='train config file path')
+    parser.add_argument('--datapath', help='training split file path')
     parser.add_argument('--work_dir', help='the dir to save logs and models')
     parser.add_argument(
         '--resume_from', help='the checkpoint file to resume from')
@@ -30,8 +31,8 @@ def parse_args():
         help='whether to evaluate the checkpoint during training')
     parser.add_argument(
         '--test',
-         type=int,
-        default=1)
+         type=bool,
+        default=False)
 
     parser.add_argument(
         '--gpus',
@@ -56,6 +57,10 @@ def main():
 
     cfg = Config.fromfile(args.config)
     # set cudnn_benchmark
+    cfg.data.train.ann_file = args.datapath
+    cfg.data.val.ann_file = args.datapath
+    cfg.data.train.type='CHIMP_TRAIN'
+    cfg.data.val.type='CHIMP_TRAIN'
     if cfg.get('cudnn_benchmark', False):
         torch.backends.cudnn.benchmark = True
     # update configs according to CLI args
