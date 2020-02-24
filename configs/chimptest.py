@@ -6,82 +6,81 @@ retinanet r50
 '''
 debug_mode = False
 # model settings
-# key settings
+###################### key settings
 video = True
-snip_size = 7
-test_snip_size = 21
-use_tcs = False  # if use tcs test snip size must == snip size
-tcmode = 'mode2'  # mode 1 sliding window || mode2 snip_size=2n+1 if reduce must be this mode || mode3 any fit
-use_train_multiscale = True
-use_train_img_aug = True
-dataset_repeat_mode_test = True
-dataset_repeat_mode_train = False
+snip_size=7
+test_snip_size=21
+use_tcs=False # if use tcs test snip size must == snip size
+tcmode='mode2' #mode 1 sliding window || mode2 snip_size=2n+1 if reduce must be this mode || mode3 any fit
+use_train_multiscale=True
+use_train_img_aug= True
+dataset_repeat_mode_test=True
+dataset_repeat_mode_train=False
 work_dir = './workdir/chimp/retinanet_r50/tc_mode2_train7_test21'
 load_from = './workdir/slurm_v_retinanet_r50_allon_repeat/epoch_13.pth'
 
 #####################################
-if True:  # fold this static setting
-    input_scale_train = [
-        (800, 500), (1088, 608)] if use_train_multiscale else (
-        800, 500)
-    aug = dict(
-        type='Compose',
-        #bbox_params={'format': 'pascal_voc', 'min_area': 2, 'min_visibility': 0.5, 'label_fields': ['category_id']},
-        transforms=[
-            # dict(
-            #     height=404,
-            #     width=720,
-            #     type='RandomSizedBBoxSafeCrop',
-            #     p=0
-            # ),
-            dict(
-                p=0,
-                max_h_size=32,
-                max_w_size=32,
-                type='Cutout'
-            ),
-            dict(
-                brightness_limit=0.3,
-                contrast_limit=0.3,
-                p=0,
-                type='RandomBrightnessContrast'
-            ),
-            dict(
-                p=0,
-                quality_lower=80,
-                quality_upper=99,
-                type='JpegCompression'
-            ),
-        ],
-        p=1.0
-    )
-    aug_prob = [0.5, 0.5, 0.5]
-    aug_p = 0.5
+if True: #fold this static setting
+    input_scale_train=[(800, 500),(1088,608)] if use_train_multiscale else (800, 500)
+    aug=dict(
+            type='Compose',
+            #bbox_params={'format': 'pascal_voc', 'min_area': 2, 'min_visibility': 0.5, 'label_fields': ['category_id']},
+            transforms=[
+                # dict(
+                #     height=404,
+                #     width=720,
+                #     type='RandomSizedBBoxSafeCrop',
+                #     p=0
+                # ),
+                dict(
+                    p=0,
+                    max_h_size=32,
+                    max_w_size=32,
+                    type='Cutout'
+                ),
+                dict(
+                    brightness_limit=0.3,
+                    contrast_limit=0.3,
+                    p=0,
+                    type='RandomBrightnessContrast'
+                ),
+                dict(
+                    p=0,
+                    quality_lower=80,
+                    quality_upper=99,
+                    type='JpegCompression'
+                ),
+            ],
+            p=1.0
+            )
+    aug_prob=[0.5,0.5,0.5]
+    aug_p=0.5
     if not use_train_img_aug:
-        aug = None
+        aug=None
     multi_mode = 'range' if use_train_multiscale else 'value'
-    input_scale_test = (1088, 608)
+    input_scale_test=(1088,608)
     tc_mode = {
-        'mode1':  # sliding window
+        'mode1': # sliding window
         dict(
-            repeat_mode=False,
-            is_position_encoding=True,
+        repeat_mode=False,
+        is_position_encoding=True,
         ),
-        'mode2':  # just distinguish references frames and target frames input frame should be 2n+1
+        'mode2': #just distinguish references frames and target frames input frame should be 2n+1
         dict(
-            repeat_mode=True,
-            is_position_encoding=False,
-            window_size=None,
-        ),
-        'mode3':  # no share weight at all
+        repeat_mode=True,
+        is_position_encoding=False,
+        window_size=None,
+        )
+        ,
+        'mode3': # no share weight at all
         dict(
             repeat_mode=False,
             is_position_encoding=False,
             window_size=None,
         )
-    }
-    repeat_mode = tc_mode[tcmode]['repeat_mode']
-    is_position_encoding = tc_mode[tcmode]['is_position_encoding']
+        }
+    repeat_mode=tc_mode[tcmode]['repeat_mode']
+    is_position_encoding=tc_mode[tcmode]['is_position_encoding']
     test_snip_size = snip_size if use_tcs else test_snip_size
 
 model = dict(
@@ -103,10 +102,10 @@ model = dict(
         tc=dict(
             insert_pos='after_add',
             repeat_mode=repeat_mode,
-            is_position_encoding=is_position_encoding,
+            is_position_encoding= is_position_encoding,
             window_size=5,
             detach=False,
-            local_mean=True,
+            local_mean = True,
             reduce=False
         ),
         stage_with_tc=(False, False, False, True),
@@ -116,24 +115,16 @@ model = dict(
             insert_pos='after_add',
             snip_size=snip_size,
         ),
-        stage_with_tcs=(
-            False,
-            False,
-            False,
-            False) if use_tcs else (
-            False,
-            False,
-            False,
-            False),
+        stage_with_tcs=(False, False, False ,False ) if use_tcs else (False, False, False ,False ),
         ############# tcsm ##################
         tcsm=dict(
             insert_pos='after_add',
         ),
-        stage_with_tcsm=(True, True, True, True),
+        stage_with_tcsm=(True, True, True ,True ),
         ############# ct ###################
         ct=dict(
             insert_pos='after_add',
-            ratio=1. / 4.,
+            ratio=1./4.,
         ),
         stage_with_ct=(False, True, True, True),
         ############# cp #####################
@@ -154,7 +145,7 @@ model = dict(
         ############# norm ##################
         # norm_cfg=dict(type='SyncBN', requires_grad=True),
         norm_eval=False,
-    ),
+        ),
     neck=dict(
         type='FPN',
         in_channels=[256, 512, 1024, 2048],
@@ -174,7 +165,7 @@ model = dict(
         anchor_strides=[8, 16, 32, 64, 128],
         target_means=[.0, .0, .0, .0],
         target_stds=[1.0, 1.0, 1.0, 1.0])
-)
+    )
 
 # training and testing settings
 
@@ -199,16 +190,16 @@ test_cfg = dict(
     max_per_img=100)
 
 # dataset settings
-dataset_type = 'CHIMP'
-data_root = '/mnt/storage/scratch/rn18510/chimp_annotation/'
+dataset_type = 'CHIMP_INFER'
+data_root = '/mnt/storage/scratch/rn18510/infer_videos/9sk2Vw5RNt.mp4'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 data = dict(
     imgs_per_gpu=1,
-    workers_per_gpu=3,
+    workers_per_gpu=8,
     train=dict(
         type=dataset_type,
-        ann_file=data_root,
+        ann_file=data_root ,
         img_prefix=data_root + 'train2017/',
         img_scale=input_scale_train,
         multiscale_mode=multi_mode,
@@ -225,7 +216,7 @@ data = dict(
         extra_aug=aug,
         aug_prob=aug_prob,
         aug_p=aug_p
-    ),
+        ),
     val=dict(
         type=dataset_type,
         ann_file=data_root,
@@ -236,11 +227,10 @@ data = dict(
         flip_ratio=0,
         with_mask=False,
         with_crowd=False,
-        with_label=True,
         snip_frame=test_snip_size,
         debug=debug_mode,
         repeat_mode=dataset_repeat_mode_test,
-    ),
+        ),
     test=dict(
         type=dataset_type,
         ann_file=data_root + 'Data/VID/test',
@@ -260,11 +250,11 @@ optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 lr_config = dict(
     policy='step',
     warmup='linear',
-    # gamma=0.02,
+    #gamma=0.02,
     warmup_iters=500,
     warmup_ratio=1.0 / 20,
-    step=[8, 12]
-)
+    step=[8,12]
+    )
 checkpoint_config = dict(interval=1)
 # yapf:disable
 log_config = dict(
