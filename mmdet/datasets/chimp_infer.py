@@ -16,6 +16,8 @@ import torch.nn.functional as F
 from torch.utils.data.dataloader import default_collate
 import json
 from PIL import Image
+
+
 class CHIMP_INFER(Dataset):
 
     CLASSES = ['Chimp']
@@ -48,15 +50,15 @@ class CHIMP_INFER(Dataset):
                  debug=False,
                  repeat_mode=False):
         self.cat2label = {cat: i + 1 for i, cat in enumerate(self.CLASSES)}
-        self.snip_frames=snip_frame
-        self.how_sparse=how_sparse
+        self.snip_frames = snip_frame
+        self.how_sparse = how_sparse
         self.test_mode = test_mode
-        self.min_val=min_val
-        self.repeat_mode=repeat_mode
-        self.ann_file=ann_file
+        self.min_val = min_val
+        self.repeat_mode = repeat_mode
+        self.ann_file = ann_file
         if repeat_mode:
-            assert self.snip_frames>2 and self.snip_frames%2==1, 'snip frame should be odd number and larger than 2'
-        self.debug=debug
+            assert self.snip_frames > 2 and self.snip_frames % 2 == 1, 'snip frame should be odd number and larger than 2'
+        self.debug = debug
         ############################################
         self.img_prefix = img_prefix
         self.img_infos = self.load_annotations(ann_file)
@@ -64,10 +66,10 @@ class CHIMP_INFER(Dataset):
         if self.min_val:
             np.random.seed(min_seed)
             np.random.shuffle(self.img_infos)
-            self.img_infos=self.img_infos[::1]
+            self.img_infos = self.img_infos[::1]
         if self.debug:
             np.random.shuffle(self.img_infos)
-            self.img_infos=self.img_infos[:16] # for testing
+            self.img_infos = self.img_infos[:16]  # for testing
 
         if proposal_file is not None:
             self.proposals = self.load_proposals(proposal_file)
@@ -126,20 +128,23 @@ class CHIMP_INFER(Dataset):
         self.seg_transform = SegMapTransform(self.size_divisor)
         self.numpy2tensor = Numpy2Tensor()
         # if use extra augmentation
-        self.aug_p=aug_p
+        self.aug_p = aug_p
         if extra_aug is not None:
             self.extra_aug = ExtraAugmentation(**extra_aug)
-            self.aug_prob=aug_prob
+            self.aug_prob = aug_prob
         else:
             self.extra_aug = None
 
         # image rescale if keep ratio
         self.resize_keep_ratio = resize_keep_ratio
+
     def __len__(self):
         return len(self.img_infos)
+
     def _rand_another(self, idx):
         pool = np.where(self.flag == self.flag[idx])[0]
         return np.random.choice(pool)
+
     def __getitem__(self, idx):
         if self.test_mode:
             return self.prepare_test_img(idx)
@@ -149,105 +154,147 @@ class CHIMP_INFER(Dataset):
                 idx = self._rand_another(idx)
                 continue
             return data
+
     def load_proposals(self, proposal_file):
         return mmcv.load(proposal_file)
 
-    def process_imgid(self,frame_id,basename,shape):
-        filename =os.path.join(basename,'{:06}'.format(frame_id)+'.jpg')
-        return dict(id=frame_id, filename=filename, video_prefix=basename,width=shape[1],height=shape[0])
+    def process_imgid(self, frame_id, basename, shape):
+        filename = os.path.join(basename, '{:06}'.format(frame_id) + '.jpg')
+        return dict(id=frame_id, filename=filename,
+                    video_prefix=basename, width=shape[1], height=shape[0])
 
-    def get_snippet(self, basename, len_of_video, num_snippets,f_num,shape):
+    def get_snippet(self, basename, len_of_video, num_snippets, f_num, shape):
         '''Group snippets.
             Returns:
           grouped_snippet_frame: (list) [[cand1,cand2,...],.....] cand:[filename]*#snip_frames
           grouped_snippet_label: (list) [[cand1,cand2,...],....] cand:[filename]*#num_snip_frames
         '''
-        def index2meta(cand,basename,f_num,shape):
-            video_data_cand=[]
+        def index2meta(cand, basename, f_num, shape):
+            video_data_cand = []
             for each in cand:
-                frame_id=f_num[each]
-                filename =os.path.join(basename,'{:06}'.format(frame_id)+'.jpg')
-                video_data_cand.append(dict(id=frame_id, filename=filename, video_prefix=basename,width=shape[1],height=shape[0]))
+                frame_id = f_num[each]
+                filename = os.path.join(
+                    basename, '{:06}'.format(frame_id) + '.jpg')
+                video_data_cand.append(
+                    dict(
+                        id=frame_id,
+                        filename=filename,
+                        video_prefix=basename,
+                        width=shape[1],
+                        height=shape[0]))
             return video_data_cand
 
-        frames=[i for i in range(len_of_video)]
-        grouped_snippet_frame=[]
+        frames = [i for i in range(len_of_video)]
+        grouped_snippet_frame = []
         for i in range(num_snippets):
-            cands=[]
+            cands = []
             for j in range(self.how_sparse):
-                cand=frames[j+i*self.snip_frames*self.how_sparse:j+(i+1)*self.how_sparse*self.snip_frames:self.how_sparse]
-                if len(cand)!=self.snip_frames and i!=0:
-                    diff=self.snip_frames-len(cand)
-                    cand=frames[j+i*self.snip_frames*self.how_sparse-self.how_sparse*diff:j+(i+1)*self.how_sparse*self.snip_frames-self.how_sparse*diff:self.how_sparse]
-                if len(cand)!=self.snip_frames:
-                    diff=self.snip_frames-len(cand)
-                    cand=cand+[frames[-1]]*diff
-                cand=index2meta(cand,basename,f_num,shape)
+                cand = frames[j +
+                              i *
+                              self.snip_frames *
+                              self.how_sparse:j +
+                              (i +
+                               1) *
+                              self.how_sparse *
+                              self.snip_frames:self.how_sparse]
+                if len(cand) != self.snip_frames and i != 0:
+                    diff = self.snip_frames - len(cand)
+                    cand = frames[j +
+                                  i *
+                                  self.snip_frames *
+                                  self.how_sparse -
+                                  self.how_sparse *
+                                  diff:j +
+                                  (i +
+                                   1) *
+                                  self.how_sparse *
+                                  self.snip_frames -
+                                  self.how_sparse *
+                                  diff:self.how_sparse]
+                if len(cand) != self.snip_frames:
+                    diff = self.snip_frames - len(cand)
+                    cand = cand + [frames[-1]] * diff
+                cand = index2meta(cand, basename, f_num, shape)
                 cands.append(cand)
             grouped_snippet_frame.append(cands)
         return grouped_snippet_frame
+
     def load_annotations(self, ann_file):
-        sort_=lambda x:int(x.split('.')[0])
-        sort_bboxes=lambda b :sorted(b,key=lambda x:x.get_frame())
+        def sort_(x): return int(x.split('.')[0])
+        def sort_bboxes(b): return sorted(b, key=lambda x: x.get_frame())
         snip_cand_infos = []
-        frames= os.listdir(ann_file)
-        frames=sorted(frames,key=lambda x:int(x.split('.')[0])) # start with frame 1
-        frames_num=[int(i.split('.')[0]) for i in frames]
-        img=Image.open(os.path.join(ann_file,frames[0]))
-        orig_w,orig_h=img.size
+        frames = os.listdir(ann_file)
+        frames = sorted(
+            frames, key=lambda x: int(
+                x.split('.')[0]))  # start with frame 1
+        frames_num = [int(i.split('.')[0]) for i in frames]
+        img = Image.open(os.path.join(ann_file, frames[0]))
+        orig_w, orig_h = img.size
         del img
-        f_num=sorted(frames_num)
-        len_video=len(f_num)
+        f_num = sorted(frames_num)
+        len_video = len(f_num)
 
         if not self.repeat_mode:
-            num_snippets, remain =divmod(len_video,self.snip_frames*self.how_sparse)
-            if remain/(self.snip_frames*self.how_sparse)>0.4:
-                num_snippets+=1
+            num_snippets, remain = divmod(
+                len_video, self.snip_frames * self.how_sparse)
+            if remain / (self.snip_frames * self.how_sparse) > 0.4:
+                num_snippets += 1
             # exclude the no one
-            if num_snippets==0:
+            if num_snippets == 0:
                 raise AssertionError
-            cand_snippets=self.get_snippet(ann_file,len_video,num_snippets,f_num,(orig_h,orig_w))
+            cand_snippets = self.get_snippet(
+                ann_file, len_video, num_snippets, f_num, (orig_h, orig_w))
         else:
-            num_seg, remain =divmod(len_video,self.how_sparse)
-            if remain/self.how_sparse>0.6:
-                num_seg+=1
-                f_num=f_num+[f_num[-1]]*(self.how_sparse-remain) # make img_ids can be divided by how_sparse
-            if num_seg==0:
+            num_seg, remain = divmod(len_video, self.how_sparse)
+            if remain / self.how_sparse > 0.6:
+                num_seg += 1
+                # make img_ids can be divided by how_sparse
+                f_num = f_num + [f_num[-1]] * (self.how_sparse - remain)
+            if num_seg == 0:
                 raise AssertionError
-            if len(f_num)<self.how_sparse*self.snip_frames:
+            if len(f_num) < self.how_sparse * self.snip_frames:
                 raise AssertionError
-            grouped=[]
+            grouped = []
             for i in range(num_seg):
-                togroup=f_num[i*self.how_sparse:(i+1)*self.how_sparse]
-                togroup=[self.process_imgid(i,ann_file,(orig_h,orig_w)) for i in togroup]
+                togroup = f_num[i * self.how_sparse:(i + 1) * self.how_sparse]
+                togroup = [
+                    self.process_imgid(
+                        i, ann_file, (orig_h, orig_w)) for i in togroup]
                 grouped.append(togroup)
-            assert num_seg>=self.snip_frames,'num seg not enough got {}'.format(num_seg)
-            cand_snippets=[]
-            radius=(self.snip_frames-1)//2
+            assert num_seg >= self.snip_frames, 'num seg not enough got {}'.format(
+                num_seg)
+            cand_snippets = []
+            radius = (self.snip_frames - 1) // 2
             for i in range(num_seg):
-                region = min(i,num_seg-i-1)
-                if region < radius: #head and tail frame need special
-                    head = True if i< num_seg-i-1 else False
-                    diff=radius-region
+                region = min(i, num_seg - i - 1)
+                if region < radius:  # head and tail frame need special
+                    head = True if i < num_seg - i - 1 else False
+                    diff = radius - region
                     if head:
-                        cand_snippet=grouped[diff:0:-1]+grouped[:i+radius+1]
+                        cand_snippet = grouped[diff:0:-
+                                               1] + grouped[:i + radius + 1]
                     else:
-                        cand_snippet=grouped[i-radius:]+grouped[-2:-2-diff:-1]
-                    assert len(cand_snippet) == self.snip_frames, 'cand_snip in head tail special region fail'
+                        cand_snippet = grouped[i - radius:] + \
+                            grouped[-2:-2 - diff:-1]
+                    assert len(
+                        cand_snippet) == self.snip_frames, 'cand_snip in head tail special region fail'
                 else:
-                    cand_snippet=grouped[i-radius:i+radius+1]
-                    assert len(cand_snippet) == self.snip_frames, '333cand_snip in head tail' 
-                cand_snippet=list(zip(*cand_snippet))
-                assert len(cand_snippet[0]) == self.snip_frames, '222cand_snip in head tail special region fail {} vs {}'.format(len(cand_snippet[0]),self.snip_frames)
+                    cand_snippet = grouped[i - radius:i + radius + 1]
+                    assert len(
+                        cand_snippet) == self.snip_frames, '333cand_snip in head tail'
+                cand_snippet = list(zip(*cand_snippet))
+                assert len(cand_snippet[0]) == self.snip_frames, '222cand_snip in head tail special region fail {} vs {}'.format(
+                    len(cand_snippet[0]), self.snip_frames)
                 cand_snippets.append(cand_snippet)
 
-            snip_cand_infos+=cand_snippets
+            snip_cand_infos += cand_snippets
         return snip_cand_infos
 
     def _filter_imgs(self, min_size=32):
         """Filter images too small."""
         valid_inds = list(range(len(self.img_infos)))
         return valid_inds
+
     def _set_group_flag(self):
         """Set flag according to image aspect ratio.
 
@@ -257,23 +304,26 @@ class CHIMP_INFER(Dataset):
         self.flag = np.zeros(len(self), dtype=np.uint8)
         for i in range(len(self)):
             img_info = self.img_infos[i]
-            img_info=img_info[0][0]
+            img_info = img_info[0][0]
             if img_info['width'] / img_info['height'] > 1:
                 self.flag[i] = 1
+
     def prepare_train_img(self, idx):
         raise NotImplementedError
+
     def prepare_test_img(self, idx):
         """Prepare an image for testing (multi-scale and flipping)"""
         img_info = self.img_infos[idx][0]
-        def prepare_single(imgs, scale, flip, orig_shape,proposal=None):
-            _imgs=[]
+
+        def prepare_single(imgs, scale, flip, orig_shape, proposal=None):
+            _imgs = []
             for img in imgs:
                 _img, img_shape, pad_shape, scale_factor = self.img_transform(
                     img, scale, flip, keep_ratio=self.resize_keep_ratio)
                 _imgs.append(_img)
             frame_ids = [int(i['id']) for i in img_info]
             if self.repeat_mode:
-                frame_ids = frame_ids[len(imgs)//2:len(imgs)//2+1]
+                frame_ids = frame_ids[len(imgs) // 2:len(imgs) // 2 + 1]
             if proposal is not None:
                 if proposal.shape[1] == 5:
                     score = proposal[:, 4, None]
@@ -293,15 +343,15 @@ class CHIMP_INFER(Dataset):
                 pad_shape=pad_shape,
                 scale_factor=scale_factor,
                 flip=flip,
-                #meta about val frame id
+                # meta about val frame id
                 frame_ids=frame_ids
-                )
+            )
             return to_tensor(_imgs), _img_meta, _proposal
-        imgs=[]
+        imgs = []
         for each_img_info in img_info:
             img = mmcv.imread(osp.join(each_img_info['filename']))
             imgs.append(img)
-        orig_h,orig_w,_=imgs[0].shape
+        orig_h, orig_w, _ = imgs[0].shape
         if self.proposals is not None:
             proposal = self.proposals[idx][:self.num_max_proposals]
             if not (proposal.shape[1] == 4 or proposal.shape[1] == 5):
@@ -310,18 +360,18 @@ class CHIMP_INFER(Dataset):
                     'but found {}'.format(proposal.shape))
         else:
             proposal = None
-        images=[]
+        images = []
         img_metas = []
         proposals = []
         for scale in self.img_scales:
             _imgs, _img_meta, _proposal = prepare_single(
-                imgs, scale, False, (orig_h,orig_w),proposal)
+                imgs, scale, False, (orig_h, orig_w), proposal)
             images.append(_imgs)
             img_metas.append(DC(_img_meta, cpu_only=True))
             proposals.append(_proposal)
             if self.flip_ratio > 0:
                 _img, _img_meta, _proposal = prepare_single(
-                    img, scale, True,(orig_h,orig_w),proposal)
+                    img, scale, True, (orig_h, orig_w), proposal)
                 imgs.append(_img)
                 img_metas.append(DC(_img_meta, cpu_only=True))
                 proposals.append(_proposal)
@@ -329,6 +379,7 @@ class CHIMP_INFER(Dataset):
         if self.proposals is not None:
             data['proposals'] = proposals
         return data
+
     def collate_fn(self, batch, samples_per_gpu=1):
         """Puts each data field into a tensor/DataContainer with outer dimension
         batch size.
@@ -356,7 +407,7 @@ class CHIMP_INFER(Dataset):
                     assert isinstance(batch[i].data, torch.Tensor)
                     # TODO: handle tensors other than 3d
                     assert batch[i].dim() == 4
-                    s,c, h, w = batch[i].size()
+                    s, c, h, w = batch[i].size()
                     for sample in batch[i:i + samples_per_gpu]:
                         assert s == sample.size(0)
                         h = max(h, sample.size(2))
@@ -376,7 +427,8 @@ class CHIMP_INFER(Dataset):
             return DC(stacked, batch[0].stack, batch[0].padding_value)
         elif isinstance(batch[0], collections.Sequence):
             transposed = zip(*batch)
-            return [self.collate_fn(samples, samples_per_gpu) for samples in transposed]
+            return [self.collate_fn(samples, samples_per_gpu)
+                    for samples in transposed]
         elif isinstance(batch[0], collections.Mapping):
             return {
                 key: self.collate_fn([d[key] for d in batch], samples_per_gpu)
@@ -384,5 +436,3 @@ class CHIMP_INFER(Dataset):
             }
         else:
             return default_collate(batch)
-
-

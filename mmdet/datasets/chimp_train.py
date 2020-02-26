@@ -47,7 +47,8 @@ class CHIMP_TRAIN(Dataset):
                  snip_frame=8,
                  how_sparse=3,
                  debug=False,
-                 repeat_mode=False):
+                 repeat_mode=False,
+                 improved_annotation=True):
         self.cat2label = {cat: i + 1 for i, cat in enumerate(self.CLASSES)}
         self.snip_frames = snip_frame
         self.how_sparse = how_sparse
@@ -55,6 +56,7 @@ class CHIMP_TRAIN(Dataset):
         self.min_val = min_val
         self.repeat_mode = repeat_mode
         self.ann_file = ann_file
+        self.improved_annotation = improved_annotation
         if repeat_mode:
             assert self.snip_frames > 2 and self.snip_frames % 2 == 1, 'snip frame should be odd number and larger than 2'
         self.debug = debug
@@ -166,7 +168,10 @@ class CHIMP_TRAIN(Dataset):
         return len(l) == (max(l) - min(l) + 1)
 
     def process_imgid(self, frame_id, basename, shape):
-        filename = '{:06d}'.format(frame_id - 1) + '.jpg'
+        if not self.improved_annotation:
+            filename = '{:06d}'.format(frame_id - 1) + '.jpg'
+        else:
+            filename = '{:06d}'.format(frame_id) + '.jpg'
         return dict(id=frame_id, filename=filename,
                     video_prefix=basename, width=shape[1], height=shape[0])
 
@@ -180,7 +185,11 @@ class CHIMP_TRAIN(Dataset):
             video_data_cand = []
             for each in cand:
                 frame_id = f_num[each]
-                filename = '{:06d}'.format(frame_id - 1) + '.jpg'
+                if not self.improved_annotation:
+                    filename = '{:06d}'.format(frame_id - 1) + '.jpg'
+                else:
+                    filename = '{:06d}'.format(frame_id) + '.jpg'
+
                 video_data_cand.append(
                     dict(
                         id=frame_id,
@@ -195,10 +204,7 @@ class CHIMP_TRAIN(Dataset):
         for i in range(num_snippets):
             cands = []
             for j in range(self.how_sparse):
-                cand = frames[j +
-                              i *
-                              self.snip_frames *
-                              self.how_sparse:j +
+                cand = frames[j + i * self.snip_frames * self.how_sparse:j +
                               (i +
                                1) *
                               self.how_sparse *
@@ -232,7 +238,10 @@ class CHIMP_TRAIN(Dataset):
         box_infos = {}
         dir_split = os.path.dirname(ann_file)
         dir_videoframes = os.path.join(dir_split, '../videoframes')
-        dir_annotations = os.path.join(dir_split, '../annotations')
+        if not self.improved_annotation:
+            dir_annotations = os.path.join(dir_split, '../annotations')
+        else:
+            dir_annotations = os.path.join(dir_split, '../improved_annotation')
         train_videos = mmcv.list_from_file(ann_file)
         if self.test_mode:
             val_videos = mmcv.list_from_file(
@@ -242,7 +251,10 @@ class CHIMP_TRAIN(Dataset):
             target_videos = val_videos
         else:
             target_videos = train_videos
+        # debug use only
 
+        # target_videos = target_videos[:2]
+        ###############
         damage_videos = 0
         print('Loading to memory ...')
         for video in tqdm.tqdm(target_videos):  # vidoe in formate 'basename'
@@ -260,12 +272,12 @@ class CHIMP_TRAIN(Dataset):
             for frame_annotation in os.listdir(annot_path):
                 tree = ET.parse(os.path.join(annot_path, frame_annotation))
                 root = tree.getroot()
-                objness = root.find('is_object').text
+                objness = len(root.findall('object')) != 0
                 frameid = int(root.find('frameid').text)
                 size = root.find('size')
                 orig_h = int(size.find('height').text)
                 orig_w = int(size.find('width').text)
-                if objness == 'True':
+                if objness:
                     objs = root.findall('object')
                     available_frame_nums.append(frameid)
                     box_infos[basename][frameid] = []

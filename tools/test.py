@@ -163,7 +163,7 @@ def main():
     cfg.data.val.type = 'CHIMP_TRAIN'
     cfg.data.val.test_mode = True
     cfg.data.val.min_val = False
-
+    cfg.data.val.improved_annotation = True
     dataset = get_dataset(cfg.data.val)
     data_loader = build_dataloader(dataset,
                                    imgs_per_gpu=1,

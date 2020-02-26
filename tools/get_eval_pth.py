@@ -5,6 +5,7 @@ import os
 from mmdet.core import eval_map
 import torch
 from yxy import path
+import mmcv
 
 
 def get_eval_pth(workdir):
@@ -71,13 +72,12 @@ def final_evaluate(results, dataset, ep, work_dir, refresh=True):
                 gt_bboxes += bboxes
                 gt_labels += labels
             gt = {'gt_labels': gt_labels, 'gt_bboxes': gt_bboxes}
+            mmcv.mkdir_or_exist(f'{path.code}/.cache')
             torch.save(
                 gt, f'{path.code}/.cache/cache_{type(dataset)}_gt.dict')
     # If the dataset is VOC2007, then use 11 points mAP evaluation.
     if hasattr(dataset, 'year') and dataset.year == 2007:
         ds_name = 'voc07'
-    elif hasattr(dataset, 'snip_frames'):
-        ds_name = 'vid'
     else:
         ds_name = dataset.CLASSES
     mean_ap, eval_results = eval_map(

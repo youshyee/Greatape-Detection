@@ -19,6 +19,7 @@ from mmcv.runner import load_checkpoint, get_dist_info
 import tempfile
 import shutil
 
+
 def collect_results(result_part, size, tmpdir=None):
     rank, world_size = get_dist_info()
     # create a tmp dir if it is not specified
@@ -60,6 +61,8 @@ def collect_results(result_part, size, tmpdir=None):
         # remove tmp dir
         shutil.rmtree(tmpdir)
         return ordered_results
+
+
 class DistEvalHook(Hook):
 
     def __init__(self, dataset, interval=1):
@@ -77,8 +80,8 @@ class DistEvalHook(Hook):
     def after_train_epoch_(self, runner):
         if not self.every_n_epochs(runner, self.interval):
             return
-        if hasattr(self.dataset,'snip_frames'):
-            collate=self.dataset.collate_fn
+        if hasattr(self.dataset, 'snip_frames'):
+            collate = self.dataset.collate_fn
         else:
             from mmcv.parallel import collate as collate
         runner.model.eval()
@@ -92,7 +95,7 @@ class DistEvalHook(Hook):
                 [torch.cuda.current_device()])[0]
 
             # compute output
-            #data_gpu['img'][0]=data_gpu['img'][0].squeeze(0)
+            # data_gpu['img'][0]=data_gpu['img'][0].squeeze(0)
             #print('gpu data',data_gpu['img'][0].shape,type(data_gpu['img'][0]))
             with torch.no_grad():
                 result = runner.model(
@@ -120,33 +123,33 @@ class DistEvalHook(Hook):
             dist.barrier()
         dist.barrier()
 
-    def after_train_epoch(self,runner): # fast version of eval
+    def after_train_epoch(self, runner):  # fast version of eval
         if not self.every_n_epochs(runner, self.interval):
             return
-        if hasattr(self.dataset,'snip_frames'):
-            video=True
-            img_per_gpu=1
+        if hasattr(self.dataset, 'snip_frames'):
+            video = True
+            img_per_gpu = 1
         else:
-            video=False
-            img_per_gpu=1
+            video = False
+            img_per_gpu = 1
         data_loader = datasets.build_dataloader(self.dataset,
-                                   imgs_per_gpu=img_per_gpu,
-                                   workers_per_gpu=8,
-                                   dist=True,
-                                   shuffle=False,
-                                   video=video)
+                                                imgs_per_gpu=img_per_gpu,
+                                                workers_per_gpu=8,
+                                                dist=True,
+                                                shuffle=False,
+                                                video=video)
         runner.model.eval()
         results = []
-        rank=runner.rank
+        rank = runner.rank
         world_size = runner.world_size
         if rank == 0:
             prog_bar = mmcv.ProgressBar(len(self.dataset))
         for i, data in enumerate(data_loader):
             with torch.no_grad():
                 result = runner.model(return_loss=False, rescale=True, **data)
-                ## added part
-                ids=data['img_meta'][0].data[0][0]['frame_ids']
-                result = dict(result=result,ids=ids)
+                # added part
+                ids = data['img_meta'][0].data[0][0]['frame_ids']
+                result = dict(result=result, ids=ids)
                 ##
             results.append(result)
 
@@ -157,14 +160,18 @@ class DistEvalHook(Hook):
 
         # collect results from all ranks
         dist.barrier()
-        results = collect_results(results, len(self.dataset), os.path.join(runner.work_dir,'temp/'))
+        results = collect_results(
+            results, len(
+                self.dataset), os.path.join(
+                runner.work_dir, 'temp/'))
         if runner.rank == 0:
             # ep=runner.epoch+1
             # raw_result=os.path.join(runner.work_dir,'raw_result_ep{}.txt'.format(ep))
             # vid_result2txt(results,raw_result)
             ##########
-            results=[result['result'] for result in results]
+            results = [result['result'] for result in results]
             self.evaluate(runner, results)
+
     def evaluate(self):
         raise NotImplementedError
 
@@ -179,20 +186,22 @@ class DistEvalmAPHook(DistEvalHook):
             gt_ignore = None
         if hasattr(self.dataset, 'snip_frames'):
             print('vid dataset eval')
-            outs=[]
+            outs = []
             for result in results:
-                outs+=result
-            results=outs
+                outs += result
+            results = outs
             del outs
             for i in range(len(self.dataset)):
-                anns,_ = self.dataset.get_ann_info(i)
+                anns, _ = self.dataset.get_ann_info(i)
                 bboxes = [ann['bboxes'] for ann in anns]
                 labels = [ann['labels'] for ann in anns]
                 if self.dataset.repeat_mode:
-                    bboxes = bboxes[self.dataset.snip_frames//2:self.dataset.snip_frames//2+1]
-                    labels = labels[self.dataset.snip_frames//2:self.dataset.snip_frames//2+1]
-                gt_bboxes+=bboxes
-                gt_labels+=labels
+                    bboxes = bboxes[self.dataset.snip_frames //
+                                    2:self.dataset.snip_frames // 2 + 1]
+                    labels = labels[self.dataset.snip_frames //
+                                    2:self.dataset.snip_frames // 2 + 1]
+                gt_bboxes += bboxes
+                gt_labels += labels
         else:
             for i in range(len(self.dataset)):
                 ann = self.dataset.get_ann_info(i)
@@ -211,8 +220,8 @@ class DistEvalmAPHook(DistEvalHook):
         # If the dataset is VOC2007, then use 11 points mAP evaluation.
         if hasattr(self.dataset, 'year') and self.dataset.year == 2007:
             ds_name = 'voc07'
-        elif self.dataset.__class__.__name__=='VID':
-            ds_name='vid'
+        elif self.dataset.__class__.__name__ == 'VID':
+            ds_name = 'vid'
         else:
             ds_name = self.dataset.CLASSES
         mean_ap, eval_results = eval_map(
@@ -224,9 +233,13 @@ class DistEvalmAPHook(DistEvalHook):
             iou_thr=0.5,
             dataset=ds_name,
             print_summary=True)
-        ep=runner.epoch+1
-        save_name=os.path.join(runner.work_dir,'ep{}_map_{}.result'.format(ep,int(round(mean_ap*10000))))
-        torch.save(eval_results,save_name)
+        ep = runner.epoch + 1
+        save_name = os.path.join(
+            runner.work_dir, 'ep{}_map_{}.result'.format(
+                ep, int(
+                    round(
+                        mean_ap * 10000))))
+        torch.save(eval_results, save_name)
         runner.log_buffer.output['mAP'] = mean_ap
         runner.log_buffer.ready = True
 

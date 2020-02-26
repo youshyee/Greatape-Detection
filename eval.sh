@@ -1,0 +1,2 @@
+sh tools/dist_test.sh 2 configs/retinanet_r101.py models/retina_r101-17130362.pth /home/richard/space/dataspace/PanAfrica/splits/val.txt
+sh tools/dist_test.sh 2 configs/retinanet_r101_scm_tcm_trainseq5_testseq21.py models/retina_r101_scm_tcm_trainseq5-4fa72e61.pth /home/richard/space/dataspace/PanAfrica/splits/val.txt

@@ -152,7 +152,7 @@ model = dict(
         stage_with_dcn=(False, True, True, True),
 
         ############# norm ##################
-        # norm_cfg=dict(type='SyncBN', requires_grad=True),
+        norm_cfg=dict(type='SyncBN', requires_grad=True),
         norm_eval=False,
     ),
     neck=dict(
@@ -199,7 +199,7 @@ test_cfg = dict(
     max_per_img=100)
 
 # dataset settings
-dataset_type = 'CHIMP'
+dataset_type = 'CHIMP_TRAIN'
 data_root = '/mnt/storage/scratch/rn18510/chimp_annotation/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
