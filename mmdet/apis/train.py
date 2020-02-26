@@ -5,7 +5,7 @@ from collections import OrderedDict
 
 import torch
 import mmcv
-from mmcv.runner import Runner, DistSamplerSeedHook, obj_from_dict
+from mmcv.runner import Runner, DistSamplerSeedHook, obj_from_dict, get_dist_info
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 
 from mmdet import datasets
@@ -58,9 +58,9 @@ def train_detector(model,
 
     # start training
     if distributed:
-        _dist_train(model, dataset, cfg, validate=validate,video=video)
+        _dist_train(model, dataset, cfg, validate=validate, video=video)
     else:
-        _non_dist_train(model, dataset, cfg, validate=validate,video=video)
+        _non_dist_train(model, dataset, cfg, validate=validate, video=video)
 
 
 def build_optimizer(model, optimizer_cfg):
@@ -133,8 +133,9 @@ def build_optimizer(model, optimizer_cfg):
         return optimizer_cls(params, **optimizer_cfg)
 
 
-def _dist_train(model, dataset, cfg, validate=False,video=False):
+def _dist_train(model, dataset, cfg, validate=False, video=False):
     # prepare data loaders
+    rank, _ = get_dist_info()
     data_loaders = [
         build_dataloader(
             dataset,
@@ -144,7 +145,7 @@ def _dist_train(model, dataset, cfg, validate=False,video=False):
             video=video)
     ]
     # put model on gpus
-    model = MMDistributedDataParallel(model.cuda())
+    model = MMDistributedDataParallel(model.cuda(rank), device_ids=[rank])
     # build runner
     optimizer = build_optimizer(model, cfg.optimizer)
     runner = Runner(model, batch_processor, optimizer, cfg.work_dir,
@@ -159,7 +160,7 @@ def _dist_train(model, dataset, cfg, validate=False,video=False):
         val_dataset_cfg = cfg.data.val
         val_dataset_cfg = val_dataset_cfg.copy()
         if cfg.video:
-            val_dataset_cfg.min_val=True
+            val_dataset_cfg.min_val = True
         if isinstance(model.module, RPN):
             # TODO: implement recall hooks for other datasets
             runner.register_hook(CocoDistEvalRecallHook(val_dataset_cfg))
@@ -177,7 +178,7 @@ def _dist_train(model, dataset, cfg, validate=False,video=False):
     runner.run(data_loaders, cfg.workflow, cfg.total_epochs)
 
 
-def _non_dist_train(model, dataset, cfg, validate=False,video=False):
+def _non_dist_train(model, dataset, cfg, validate=False, video=False):
     # prepare data loaders
     data_loaders = [
         build_dataloader(

@@ -4,6 +4,7 @@ template for chimp
 retinanet r50
 
 '''
+from yxy import path
 debug_mode = False
 # model settings
 # key settings
@@ -16,8 +17,8 @@ use_train_multiscale = True
 use_train_img_aug = True
 dataset_repeat_mode_test = True
 dataset_repeat_mode_train = False
-work_dir = './workdir/chimp/retinanet_r50/tc_mode2_train7_test21'
-load_from = './workdir/slurm_v_retinanet_r50_allon_repeat/epoch_13.pth'
+work_dir = '../workdir/chimp/tcm_scm_train7_test21'
+load_from = None
 
 #####################################
 if True:  # fold this static setting
@@ -200,7 +201,7 @@ test_cfg = dict(
 
 # dataset settings
 dataset_type = 'CHIMP_TRAIN'
-data_root = '/mnt/storage/scratch/rn18510/chimp_annotation/'
+data_root = f'{path.data}/PanAfrica/splits/train.txt'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 data = dict(

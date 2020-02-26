@@ -146,16 +146,17 @@ def main():
                     checkpoint),
                 map_location='cpu')
             print('evaluating ', checkpoint)
+            rank, _ = get_dist_info()
+
             if not distributed:
                 model = MMDataParallel(model, device_ids=[0])
                 outputs = single_gpu_test(model, data_loader, args.show)
             else:
-                model = MMDistributedDataParallel(model.cuda())
+                model = MMDistributedDataParallel(model.cuda(rank), device_ids=[rank])
                 outputs = multi_gpu_test(
                     model, data_loader, osp.join(
                         cfg.work_dir, 'temp__'))
 
-            rank, _ = get_dist_info()
             dist.barrier()
             if rank == 0:
                 ep = checkpoint.split('.')[0].split('_')[-1]
