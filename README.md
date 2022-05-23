@@ -1,5 +1,5 @@
 
-# [Great Ape Detection](youshyee.xyz/Greatape-Detection)
+# [Great Ape Detection](https://youshyee.xyz/Greatape-Detection)
 
 ## Introduction
 
