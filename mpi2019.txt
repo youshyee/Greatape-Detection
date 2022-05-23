@@ -1,0 +1,12 @@
+The video source data "PanAfrican2019" contains 500 videos of approx 15s each, summing to over 180K frames overall.
+The videos show great apes, that is gorillas or chimpanzees, passing by camera traps. The 500 videos are a small subset of the data gathered in the Pan African Programme.
+The dataset PanAfrican2019 was used and fully manually annotated for the ICCVW2019 paper:
+X Yang, M Mirmehdi, T Burghardt. Great Ape Detection in Challenging Jungle Camera Trap Footage via Attention-Based Spatial and Temporal Feature Blending. Computer Vision for Wildlife Conservation (CVWC) Workshop at IEEE International Conference of Computer Vision (ICCVW), October 2019.
+
+We would like to thank the entire team of the Pan African Programme: ‘The Cultured Chimpanzee’ and its collaborators for allowing the use
+of their data for this paper. Please contact the copyright holder Pan African Programme at http://panafrican.eva.mpg.de directly to obtain the dataset.
+
+The PanAfrica programme holds copyrights of all data.
+
+The University of Bristol holds a copy of the dataset for project documentation purposes only
+and cannot release the dataset without the copyright holder's explicit permission.
