@@ -38,6 +38,8 @@ year = {2019}
 
 ## PanAfrican2019 Dataset
 
+<img src="pan.jpg" alt="pan data" width="800"/>
+
 The annotations for the three datasets can be found [here](https://data.bris.ac.uk/data/dataset/1v9op9lc6zi5g25kkwa5smb3vq).
 
 The Dataset PanAfrican2019 Video can be found [here](mpi2019.txt).
